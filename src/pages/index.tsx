@@ -2,7 +2,8 @@ import Head from 'next/head'
 import { Card, Metric, Text, Flex, Grid, Title, BarList, ProgressBar, Col } from '@tremor/react';
 import TimeWidget from '@/widgets/time';
 import IMUChartWidget from '@/widgets/imuchart';
-import DevicesWidget from '@/widgets/devices';
+import dynamic from 'next/dynamic';
+const DynamicDevicesWidget = dynamic(() => import('@/widgets/devices'), { ssr: false });
 
 const data = [
   {
@@ -70,7 +71,7 @@ export default function Home() {
               <Text>SkyNet Temperature</Text>
               <Metric>NaN</Metric>
             </Card>
-            <DevicesWidget className="mt-4" />
+            <DynamicDevicesWidget className="mt-4" />
           </Col>
           <IMUChartWidget 
               className="mt-4"
