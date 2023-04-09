@@ -4,6 +4,8 @@ import TimeWidget from '@/widgets/time';
 import IMUChartWidget from '@/widgets/imuchart';
 import dynamic from 'next/dynamic';
 const DynamicDevicesWidget = dynamic(() => import('@/widgets/devices'), { ssr: false });
+import { useState } from 'react';
+import DeviceTerminal from '@/widgets/deviceterminal';
 
 const data = [
   {
@@ -27,6 +29,17 @@ const data = [
 ];
 
 export default function Home() {
+  const [serialPortStatus, setIsSerialPortOpen] = useState(false);
+  const [serialData, setSerialData] = useState<Uint8Array[]>([]);
+
+  const handleSerialData = (data: Uint8Array) => {
+    setSerialData((prevData) => [...prevData, data]);
+  };
+
+  const handlePortStatusChange = (portStatus: boolean) => {
+    setIsSerialPortOpen(portStatus);
+  }
+
   return (
     <>
       <Head>
@@ -71,7 +84,7 @@ export default function Home() {
               <Text>SkyNet Temperature</Text>
               <Metric>NaN</Metric>
             </Card>
-            <DynamicDevicesWidget className="mt-4" />
+            <DynamicDevicesWidget className="mt-4" serialPortStatus={serialPortStatus} handlePortStatusChange={handlePortStatusChange} handleSerialData={handleSerialData} />
           </Col>
           <IMUChartWidget 
               className="mt-4"
@@ -88,6 +101,7 @@ export default function Home() {
               chartIndex={"Packet"} 
             />
         </Grid>
+        <DeviceTerminal className="mt-4" serialPortStatus={serialPortStatus} serialData={serialData}/>
       </main>
     </>
   )

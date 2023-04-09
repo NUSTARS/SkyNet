@@ -1,6 +1,7 @@
 import { Card, Button, Dropdown, DropdownItem, Flex, Title, Text, TextInput } from "@tremor/react";
 import { Serialport, SerialPortInfo } from 'tauri-serialport'
 import { useEffect, useState } from "react";
+import { message } from '@tauri-apps/api/dialog';
 
 /* Warning: This widget can only be loaded dynamically. 
    For more information, see: 
@@ -8,6 +9,9 @@ import { useEffect, useState } from "react";
 
 interface MyComponentProps {
     className?: string;
+    handleSerialData: (data: Uint8Array) => void;
+    serialPortStatus: boolean;
+    handlePortStatusChange: (portStatus: boolean) => void;
 };
 
 function generatePortOutputString(port: SerialPortInfo): string {
@@ -49,12 +53,29 @@ function DevicesWidget(props: MyComponentProps) {
     const [serialport, setSerialport] = useState<Serialport | undefined>(undefined);
 
     function openSerialPort(port: string, baud: number) {
+        if (port === "") {
+            message('Please select a serial port device!', { title: 'SkyNet', type: 'error' });
+            console.error("Port is empty");
+            return;
+        } else if (!isBaudRateValid) {
+            message('Please enter a valid baud rate!', { title: 'SkyNet', type: 'error' });
+            console.error("Baud rate is invalid");
+            return;
+        }
+
+        // Create a new serialport instance
         const newSerialport = new Serialport({ path: port, baudRate: baud });
+        // Set the serialport state
         setSerialport(newSerialport);
         console.log("Opening serial port", newSerialport);
         newSerialport.open()
             .then((port) => {
                 console.log('Opened serialport', port);
+                // Begin reading from the serial port
+                readFromSerialPort(newSerialport);
+                // Start listener for incoming data
+                listenToSerialPort(newSerialport);
+                props.handlePortStatusChange(true);
             })
             .catch((err) => {
                 console.error("Error opening the serial port", err);
@@ -67,13 +88,14 @@ function DevicesWidget(props: MyComponentProps) {
             .then((res) => {
                 console.log("Closed")
                 setSerialport(undefined);
+                props.handlePortStatusChange(false);
             })
             .catch((err) => {
                 console.error("Error closing the serial port", err);
             });
     }
 
-    function listenToSerialPort() {
+    function listenToSerialPort(serialport: Serialport) {
         if (serialport === undefined) {
             console.error("Serial port is not open");
             return;
@@ -85,16 +107,17 @@ function DevicesWidget(props: MyComponentProps) {
             const decodedString = decoder.decode(data);
             console.log("Incoming data")
             console.log(decodedString);
-          }, false)
-          .then((res) => {
-            console.log('Listening to serial port', res);
-          })
-          .catch((err) => {
-            console.error(err);
-          });
+            props.handleSerialData(data);
+        }, false)
+            .then((res) => {
+                console.log('Listening to serial port', res);
+            })
+            .catch((err) => {
+                console.error(err);
+            });
     }
 
-    function readFromSerialPort() {
+    function readFromSerialPort(serialport: Serialport) {
         if (serialport === undefined) {
             console.error("Serial port is not open");
             return;
@@ -108,6 +131,23 @@ function DevicesWidget(props: MyComponentProps) {
                 console.error(err);
             });
     }
+
+    const [isBaudRateValid, setIsBaudRateValid] = useState<boolean>(true);
+    function setBaudRate(baudRateString: string): void {
+        const validBaudRates: string[] = ['9600', '19200', '38400', '57600', '115200'];
+        if (validBaudRates.includes(baudRateString)) {
+            setIsBaudRateValid(true);
+            const baudRate = parseInt(baudRateString, 10);
+            setSerialBaudRate(baudRate);
+        } else {
+            setIsBaudRateValid(false);
+        }
+    }
+
+
+    const [serialData, setSerialData] = useState<Uint8Array>(new Uint8Array(0));
+    const [serialBaudRate, setSerialBaudRate] = useState<number>(115200);
+    const [serialDevicePath, setSerialDevicePath] = useState<string>("");
 
 
     return (
@@ -131,7 +171,7 @@ function DevicesWidget(props: MyComponentProps) {
                     <Text>Receiver Serial Port</Text>
                     <Dropdown
                         className="mt-2"
-                        onValueChange={(value) => console.log("The selected value is", value)}
+                        onValueChange={(value) => setSerialDevicePath(value)}
                         placeholder="Select a Port"
                     >
                         {ports.map((port) => (
@@ -139,7 +179,7 @@ function DevicesWidget(props: MyComponentProps) {
                         ))}
                     </Dropdown>
                     <Text className="mt-2">Receiver Baud Rate</Text>
-                    <TextInput className="mt-2" placeholder="Input Baud Rate" defaultValue="115200" />
+                    <TextInput className="mt-2" placeholder="Input Baud Rate" defaultValue="115200" onChange={(e) => { setBaudRate(e.target.value) }} error={!isBaudRateValid} />
                     <Flex justifyContent="end" className="mt-4 space-x-2">
                         <Button
                             size="xs"
@@ -151,30 +191,19 @@ function DevicesWidget(props: MyComponentProps) {
                         <Button
                             size="xs"
                             variant="primary"
-                            onClick={() => openSerialPort("COM4", 115200)}
+                            onClick={() => openSerialPort(serialDevicePath, serialBaudRate)}
                         >
                             Connect
                         </Button>
+                    </Flex>
+                    <Text className="mt-2">Serial Control Options</Text>
+                    <Flex justifyContent="end" className="mt-4 space-x-2">
                         <Button
                             size="xs"
                             variant="primary"
                             onClick={closeSerialPort}
                         >
                             Close
-                        </Button>
-                        <Button
-                            size="xs"
-                            variant="primary"
-                            onClick={listenToSerialPort}
-                        >
-                            Listen
-                        </Button>
-                        <Button
-                            size="xs"
-                            variant="primary"
-                            onClick={readFromSerialPort}
-                        >
-                            Read
                         </Button>
                     </Flex>
                 </>
