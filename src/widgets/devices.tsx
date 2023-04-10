@@ -2,6 +2,7 @@ import { Card, Button, Dropdown, DropdownItem, Flex, Title, Text, TextInput } fr
 import { Serialport, SerialPortInfo } from 'tauri-serialport'
 import { useEffect, useState } from "react";
 import { message } from '@tauri-apps/api/dialog';
+import { RocketState } from "@/utils/types/rocketState";
 
 /* Warning: This widget can only be loaded dynamically. 
    For more information, see: 
@@ -14,6 +15,7 @@ interface MyComponentProps {
     handlePortStatusChange: (portStatus: boolean) => void;
     serialPort: Serialport | undefined;
     handleNewSerialPort: (serialPort: Serialport) => void;
+    handleRocketStateChange: (state: RocketState) => void;
 };
 
 function generatePortOutputString(port: SerialPortInfo): string {
@@ -94,27 +96,61 @@ function DevicesWidget(props: MyComponentProps) {
             });
     }
 
-    function listenToSerialPort(serialport: Serialport) {
-        if (serialport === undefined) {
-            console.error("Serial port is not open");
-            return;
+    function getStatusFromData(latestData: string): RocketState {
+        if (latestData.includes("ARMD")) {
+          return RocketState.ARMED;
+        } else if (latestData.includes("RECY")) {
+          return RocketState.RECOVERY;
+        } else if (latestData.includes("IDLE") || latestData.includes("SA")) {
+          return RocketState.IDLE;
+        } else if (latestData.includes("/*")) {
+          return RocketState.LAUNCHED;
+        } else {
+          return RocketState.UNKNOWN; // Default to unknown if the data doesn't match any state
         }
+      }
+
+      function listenToSerialPort(serialport: Serialport) {
+        if (serialport === undefined) {
+          console.error("Serial port is not open");
+          return;
+        }
+      
         console.log("Listening to serial port", serialport);
+      
+        let buffer = "";
+      
         serialport.listen((data: Uint8Array) => {
-            // Use TextDecoder to convert the Uint8Array to a string
-            const decoder = new TextDecoder();
-            const decodedString = decoder.decode(data);
-            console.log("Incoming data")
-            console.log(decodedString);
-            props.handleSerialData(data);
+          // Use TextDecoder to convert the Uint8Array to a string
+          const decoder = new TextDecoder();
+          const decodedString = decoder.decode(data);
+          console.log("Incoming data", decodedString);
+      
+          // Append the incoming data to the buffer
+          buffer += decodedString;
+      
+          // Split the buffer into an array of strings using the '\n' delimiter
+          const lines = buffer.split('\n');
+      
+          // Iterate over the array and call handleSerialData and handleRocketStateChange with each line of data
+          for (let i = 0; i < lines.length - 1; i++) {
+            const line = lines[i];
+            const encoder = new TextEncoder();
+            const lineData = encoder.encode(line);
+            props.handleSerialData(lineData);
+            props.handleRocketStateChange(getStatusFromData(line));
+          }
+      
+          // Keep the last line in the buffer in case it is incomplete
+          buffer = lines[lines.length - 1];
         }, false)
-            .then((res) => {
-                console.log('Listening to serial port', res);
-            })
-            .catch((err) => {
-                console.error(err);
-            });
-    }
+        .then((res) => {
+          console.log('Listening to serial port', res);
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+      }      
 
     function readFromSerialPort(serialport: Serialport) {
         if (serialport === undefined) {

@@ -7,7 +7,8 @@ const DynamicDevicesWidget = dynamic(() => import('@/widgets/devices'), { ssr: f
 import { useState } from 'react';
 import DeviceTerminal from '@/widgets/deviceterminal';
 import DeviceStateWidget from '@/widgets/devicestate';
-import {Serialport} from 'tauri-serialport';
+import { Serialport } from 'tauri-serialport';
+import { RocketState } from '@/utils/types/rocketState';
 
 const data = [
   {
@@ -34,6 +35,7 @@ export default function Home() {
   const [serialPortStatus, setIsSerialPortOpen] = useState(false);
   const [serialData, setSerialData] = useState<Uint8Array[]>([]);
   const [serialPort, setSerialport] = useState<Serialport | undefined>(undefined);
+  const [rocketState, setRocketState] = useState<RocketState>(0);
 
   const handleNewSerialPort = (port: Serialport) => {
     setSerialport(port);
@@ -45,6 +47,10 @@ export default function Home() {
 
   const handlePortStatusChange = (portStatus: boolean) => {
     setIsSerialPortOpen(portStatus);
+  }
+
+  const handleRocketStateChange = (state: RocketState) => {
+    setRocketState(state);
   }
 
   return (
@@ -67,7 +73,7 @@ export default function Home() {
             </Flex>
             <ProgressBar percentageValue={32} className="mt-2" />
           </Card>
-          <DeviceStateWidget serialPortStatus={serialPortStatus} serialData={serialData} />
+          <DeviceStateWidget serialPortStatus={serialPortStatus} rocketState={rocketState} serialPort={serialPort}/>
           <Col numColSpan={1} numColSpanLg={2} className="gap-2">
             <IMUChartWidget
               className="mt-4"
@@ -110,7 +116,7 @@ export default function Home() {
           <Col numColSpan={1} numColSpanLg={2}>
             <DeviceTerminal className="mt-4 min-h-full" serialPortStatus={serialPortStatus} serialData={serialData} serialPort={serialPort}/>
           </Col>
-          <DynamicDevicesWidget className="mt-4 min-h-full" serialPortStatus={serialPortStatus} handlePortStatusChange={handlePortStatusChange} handleSerialData={handleSerialData} serialPort={serialPort} handleNewSerialPort={handleNewSerialPort}/>
+          <DynamicDevicesWidget className="mt-4 min-h-full" serialPortStatus={serialPortStatus} handlePortStatusChange={handlePortStatusChange} handleSerialData={handleSerialData} serialPort={serialPort} handleNewSerialPort={handleNewSerialPort} handleRocketStateChange={handleRocketStateChange} />
         </Grid>
       </main>
     </>

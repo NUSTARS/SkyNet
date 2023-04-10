@@ -33,17 +33,15 @@ function DeviceTerminal(props: MyComponentProps) {
             });
     }
 
-    const writeToSerialPort = () => {
+    const writeToSerialPort = (command: string) => {
         if (props.serialPort === undefined) {
             console.error("Serial port is not open");
             return;
         }
         props.serialPort.cancelRead();
-        props.serialPort.write(serialCommand + "\n")
+        props.serialPort.write(command + "\n")
             .then((data) => {
-                console.log('Wrote data: ', data);
-                // Clear the input field
-                //setSerialCommand('');
+                console.log('Wrote data to serial: ', data);
                 readFromSerialPort();
             })
             .catch((err) => {
@@ -92,7 +90,7 @@ function DeviceTerminal(props: MyComponentProps) {
             </Card>
             <Flex justifyContent="end" className="mt-4 space-x-2">
                 <TextInput placeholder="Input serial command" onChange={(e) => { setSerialCommand(e.target.value) }} />
-                <Button onClick={writeToSerialPort}>Send</Button>
+                <Button onClick={() => writeToSerialPort(serialCommand)}>Send</Button>
             </Flex>
         </Card>
     );
