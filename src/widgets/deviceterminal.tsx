@@ -1,4 +1,4 @@
-import { Button, Card, Flex, Title, Text, TextInput } from '@tremor/react';
+import { Button, Card, Col, Grid, Flex, Title, Text, TextInput } from '@tremor/react';
 import { useEffect, useRef, useState } from 'react';
 
 interface MyComponentProps {
@@ -14,6 +14,12 @@ function DeviceTerminal(props: MyComponentProps) {
         const decoder = new TextDecoder();
         return decoder.decode(data);
     };
+
+    useEffect(() => {
+        if (terminalRef.current) {
+            terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+        }
+    }, [props.serialData]);
 
     if (!props.serialPortStatus) {
         return (
@@ -31,14 +37,20 @@ function DeviceTerminal(props: MyComponentProps) {
                 <div
                     ref={terminalRef}
                     style={{
-                        minHeight: '200px', // Set the desired minimun height.
+                        minHeight: '200px', // Set the desired minimum height.
                         maxHeight: '200px', // Set the desired maximum height.
                         overflowY: 'scroll',
                         whiteSpace: 'pre-wrap',
+                        position: 'relative',
                     }}
                 >
                     {props.serialData.map((line, index) => (
-                        <Text key={index}>{convertUint8ArrayToString(line)}</Text>
+                        <Flex justifyContent="start">
+                            <Text color="gray" className="font-mono tabular-nums min-w-20">{"> " + (index + 1) + " "}</Text>
+                            <Col numColSpan={11}>
+                                <Text>{convertUint8ArrayToString(line)}</Text>
+                            </Col>
+                        </Flex>
                     ))}
                 </div>
             </Card>
