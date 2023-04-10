@@ -45,7 +45,7 @@ function DeviceTerminal(props: MyComponentProps) {
                     }}
                 >
                     {props.serialData.map((line, index) => (
-                        <Flex justifyContent="start">
+                        <Flex justifyContent="start" key={"tline" + index}>
                             <Text color="gray" className="font-mono tabular-nums min-w-20">{"> " + (index + 1) + " "}</Text>
                             <Col numColSpan={11}>
                                 <Text>{convertUint8ArrayToString(line)}</Text>
