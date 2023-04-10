@@ -18,7 +18,7 @@ function TimeWidget() {
     }, []);
 
     return (
-        <Card className="max-w-xs mx-auto">
+        <Card>
             <Text>Local Time</Text>
             <Metric>{localTime}</Metric>
             <Flex className="mt-4">

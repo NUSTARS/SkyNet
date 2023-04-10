@@ -49,9 +49,9 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="p-4 md:p-10 mx-auto max-w-7xl">
-        <Grid className="mt-4 gap-3" numColsSm={2} numColsLg={3}>
+        <Grid numCols={1} numColsSm={2} numColsLg={3} className="gap-2">
           <TimeWidget />
-          <Card className="max-w-xs mx-auto">
+          <Card>
             <Text>Rocket Altitude</Text>
             <Metric>71,465 ft</Metric>
             <Flex className="mt-4">
@@ -60,48 +60,54 @@ export default function Home() {
             </Flex>
             <ProgressBar percentageValue={32} className="mt-2" />
           </Card>
-          <Card className="max-w-xs mx-auto">
+          <Card>
             <Text>Rocket Status</Text>
             <Metric>No Connection</Metric>
           </Card>
-        </Grid>
-        <Grid className="mt-4 gap-6" numCols={3}>
-          <Col numColSpan={1} numColSpanLg={2}>
-            <IMUChartWidget 
+          <Col numColSpan={1} numColSpanLg={2} className="gap-2">
+            <IMUChartWidget
               className="mt-4"
               title="Accelerometer"
               text="LSM6DSL"
               chartData={data}
-              chartIndex={"Packet"} 
+              chartIndex={"Packet"}
             />
           </Col>
-          <Col numColSpan={1}>
+          <Grid numCols={1}>
             <Card className="mt-4">
               <Text>Drogue Status</Text>
               <Metric>Not Deployed</Metric>
             </Card>
             <Card className="mt-4">
-              <Text>SkyNet Temperature</Text>
+              <Text>SkyNet Transmitter Temperature</Text>
               <Metric>NaN</Metric>
             </Card>
-            <DynamicDevicesWidget className="mt-4" serialPortStatus={serialPortStatus} handlePortStatusChange={handlePortStatusChange} handleSerialData={handleSerialData} />
+          </Grid>
+          <Col numColSpan={3}>
+            <Flex className="gap-2">
+              <IMUChartWidget
+                className="mt-4"
+                title="Gyroscope"
+                text="LSM6DSL"
+                chartData={data}
+                chartIndex={"Packet"}
+              />
+              <IMUChartWidget
+                className="mt-4"
+                title="Magnetometer"
+                text="LSM6DSL"
+                chartData={data}
+                chartIndex={"Packet"}
+              />
+            </Flex>
           </Col>
-          <IMUChartWidget 
-              className="mt-4"
-              title="Gyroscope"
-              text="LSM6DSL"
-              chartData={data}
-              chartIndex={"Packet"} 
-            />
-            <IMUChartWidget 
-              className="mt-4"
-              title="Magnetometer"
-              text="LSM6DSL"
-              chartData={data}
-              chartIndex={"Packet"} 
-            />
         </Grid>
-        <DeviceTerminal className="mt-4" serialPortStatus={serialPortStatus} serialData={serialData}/>
+        <Grid numCols={1} numColsSm={2} numColsLg={3} className="gap-2">
+          <Col numColSpan={1} numColSpanLg={2}>
+            <DeviceTerminal className="mt-4 min-h-full" serialPortStatus={serialPortStatus} serialData={serialData} />
+          </Col>
+          <DynamicDevicesWidget className="mt-4 min-h-full" serialPortStatus={serialPortStatus} handlePortStatusChange={handlePortStatusChange} handleSerialData={handleSerialData} />
+        </Grid>
       </main>
     </>
   )

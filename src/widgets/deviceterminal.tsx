@@ -1,4 +1,4 @@
-import { Card, Title, Text } from '@tremor/react';
+import { Button, Card, Flex, Title, Text, TextInput } from '@tremor/react';
 import { useEffect, useRef, useState } from 'react';
 
 interface MyComponentProps {
@@ -19,7 +19,7 @@ function DeviceTerminal(props: MyComponentProps) {
         return (
             <Card className={props.className}>
                 <Title>Device Terminal</Title>
-                <Text>Serial port is not open</Text>
+                <Text>Waiting for serial port to open...</Text>
             </Card>
         );
     }
@@ -27,18 +27,25 @@ function DeviceTerminal(props: MyComponentProps) {
     return (
         <Card className={props.className}>
             <Title>Device Terminal</Title>
-            <div
-                ref={terminalRef}
-                style={{
-                    maxHeight: '200px', // Set the desired maximum height.
-                    overflowY: 'scroll',
-                    whiteSpace: 'pre-wrap',
-                }}
-            >
-                {props.serialData.map((line, index) => (
-                    <Text key={index}>{convertUint8ArrayToString(line)}</Text>
-                ))}
-            </div>
+            <Card className="mt-2" decoration="left" decorationColor="gray">
+                <div
+                    ref={terminalRef}
+                    style={{
+                        minHeight: '200px', // Set the desired minimun height.
+                        maxHeight: '200px', // Set the desired maximum height.
+                        overflowY: 'scroll',
+                        whiteSpace: 'pre-wrap',
+                    }}
+                >
+                    {props.serialData.map((line, index) => (
+                        <Text key={index}>{convertUint8ArrayToString(line)}</Text>
+                    ))}
+                </div>
+            </Card>
+            <Flex justifyContent="end" className="mt-4 space-x-2">
+                <TextInput placeholder="Input serial command" />
+                <Button>Send</Button>
+            </Flex>
         </Card>
     );
 }
