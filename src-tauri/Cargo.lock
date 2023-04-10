@@ -2593,6 +2593,7 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-serialport"
 version = "0.0.4"
+source = "git+https://github.com/chazzhou/tauri-serialport?tag=v0.1.6#d09cdae95569d846fdf249ff564439818f89dcda"
 dependencies = [
  "serde",
  "serialport",
