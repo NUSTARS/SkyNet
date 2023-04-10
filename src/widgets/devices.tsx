@@ -12,6 +12,8 @@ interface MyComponentProps {
     handleSerialData: (data: Uint8Array) => void;
     serialPortStatus: boolean;
     handlePortStatusChange: (portStatus: boolean) => void;
+    serialPort: Serialport | undefined;
+    handleNewSerialPort: (serialPort: Serialport) => void;
 };
 
 function generatePortOutputString(port: SerialPortInfo): string {
@@ -50,8 +52,6 @@ function DevicesWidget(props: MyComponentProps) {
             });
     }
 
-    const [serialport, setSerialport] = useState<Serialport | undefined>(undefined);
-
     function openSerialPort(port: string, baud: number) {
         if (port === "") {
             message('Please select a serial port device!', { title: 'SkyNet', type: 'error' });
@@ -64,9 +64,9 @@ function DevicesWidget(props: MyComponentProps) {
         }
 
         // Create a new serialport instance
-        const newSerialport = new Serialport({ path: port, baudRate: baud });
+        const newSerialport = new Serialport({ path: port, baudRate: baud, flowControl: "Software"});
         // Set the serialport state
-        setSerialport(newSerialport);
+        props.handleNewSerialPort(newSerialport);
         console.log("Opening serial port", newSerialport);
         newSerialport.open()
             .then((port) => {
@@ -83,11 +83,10 @@ function DevicesWidget(props: MyComponentProps) {
     }
 
     function closeSerialPort() {
-        console.log("Closing serial port", serialport)
-        serialport?.close()
+        console.log("Closing serial port", props.serialPort)
+        props.serialPort?.close()
             .then((res) => {
                 console.log("Closed")
-                setSerialport(undefined);
                 props.handlePortStatusChange(false);
             })
             .catch((err) => {
@@ -144,11 +143,8 @@ function DevicesWidget(props: MyComponentProps) {
         }
     }
 
-
-    const [serialData, setSerialData] = useState<Uint8Array>(new Uint8Array(0));
     const [serialBaudRate, setSerialBaudRate] = useState<number>(115200);
     const [serialDevicePath, setSerialDevicePath] = useState<string>("");
-
 
     return (
         <Card className={props.className}>

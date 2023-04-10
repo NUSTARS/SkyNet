@@ -6,6 +6,8 @@ import dynamic from 'next/dynamic';
 const DynamicDevicesWidget = dynamic(() => import('@/widgets/devices'), { ssr: false });
 import { useState } from 'react';
 import DeviceTerminal from '@/widgets/deviceterminal';
+import DeviceStateWidget from '@/widgets/devicestate';
+import {Serialport} from 'tauri-serialport';
 
 const data = [
   {
@@ -31,6 +33,11 @@ const data = [
 export default function Home() {
   const [serialPortStatus, setIsSerialPortOpen] = useState(false);
   const [serialData, setSerialData] = useState<Uint8Array[]>([]);
+  const [serialPort, setSerialport] = useState<Serialport | undefined>(undefined);
+
+  const handleNewSerialPort = (port: Serialport) => {
+    setSerialport(port);
+  }
 
   const handleSerialData = (data: Uint8Array) => {
     setSerialData((prevData) => [...prevData, data]);
@@ -60,10 +67,7 @@ export default function Home() {
             </Flex>
             <ProgressBar percentageValue={32} className="mt-2" />
           </Card>
-          <Card>
-            <Text>Rocket Status</Text>
-            <Metric>No Connection</Metric>
-          </Card>
+          <DeviceStateWidget serialPortStatus={serialPortStatus} serialData={serialData} />
           <Col numColSpan={1} numColSpanLg={2} className="gap-2">
             <IMUChartWidget
               className="mt-4"
@@ -104,9 +108,9 @@ export default function Home() {
         </Grid>
         <Grid numCols={1} numColsSm={2} numColsLg={3} className="gap-2">
           <Col numColSpan={1} numColSpanLg={2}>
-            <DeviceTerminal className="mt-4 min-h-full" serialPortStatus={serialPortStatus} serialData={serialData} />
+            <DeviceTerminal className="mt-4 min-h-full" serialPortStatus={serialPortStatus} serialData={serialData} serialPort={serialPort}/>
           </Col>
-          <DynamicDevicesWidget className="mt-4 min-h-full" serialPortStatus={serialPortStatus} handlePortStatusChange={handlePortStatusChange} handleSerialData={handleSerialData} />
+          <DynamicDevicesWidget className="mt-4 min-h-full" serialPortStatus={serialPortStatus} handlePortStatusChange={handlePortStatusChange} handleSerialData={handleSerialData} serialPort={serialPort} handleNewSerialPort={handleNewSerialPort}/>
         </Grid>
       </main>
     </>
