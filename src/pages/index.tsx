@@ -13,6 +13,7 @@ import { SensorData, TimeSeriesData } from '@/utils/types/sensorData';
 import AltitudeWidget from '@/widgets/altitude';
 import DrogueStatusWidget from '@/widgets/droguestatus';
 import DeviceTemperatureWidget from '@/widgets/devicetemperature';
+import SaveDataWidget from '@/widgets/savedata';
 
 export default function Home() {
   const [serialPortStatus, setIsSerialPortOpen] = useState(false);
@@ -107,7 +108,11 @@ export default function Home() {
               rocketState={rocketState}
             />
             <DeviceTemperatureWidget
-              className="mt-4"
+              className="mt-2"
+              sensorData={timeSeriesData}
+            />
+            <SaveDataWidget
+              className="mt-2"
               sensorData={timeSeriesData}
             />
           </Grid>
