@@ -3,6 +3,7 @@ import { Serialport, SerialPortInfo } from 'tauri-serialport'
 import { useEffect, useState } from "react";
 import { message } from '@tauri-apps/api/dialog';
 import { RocketState } from "@/utils/types/rocketState";
+import { SensorData } from "@/utils/types/sensorData";
 
 /* Warning: This widget can only be loaded dynamically. 
    For more information, see: 
@@ -10,14 +11,49 @@ import { RocketState } from "@/utils/types/rocketState";
 
 interface MyComponentProps {
     className?: string;
-    handleSerialData: (data: Uint8Array) => void;
+    handleSerialData: (data: string) => void;
     serialPortStatus: boolean;
     handlePortStatusChange: (portStatus: boolean) => void;
     serialPort: Serialport | undefined;
     handleNewSerialPort: (serialPort: Serialport) => void;
     handleRocketStateChange: (state: RocketState) => void;
+    appendSensorDataToTimeSeries: (data: SensorData) => void;
 };
 
+// Function to parse the string received from the Arduino
+function parseSensorData(input: string): SensorData {
+    // Remove the leading "/*" and trailing "*/"
+    const cleanedInput = input.replace(/^\/\*/, '').replace(/\*\/$/, '').trim();
+    const values = cleanedInput.split(',');
+
+    // Validate the input
+    if (values.length !== 14) {
+        console.error('Invalid input string, expected 14 comma-separated values');
+        return {} as SensorData;
+    }
+
+    // Parse the values and create a SensorData object
+    const parsedData: SensorData = {
+        ToF: parseFloat(values[0]),
+        temperature: parseFloat(values[1]),
+        pressure: parseFloat(values[2]),
+        altitude: parseFloat(values[3]),
+        accelX: parseFloat(values[4]),
+        accelY: parseFloat(values[5]),
+        accelZ: parseFloat(values[6]),
+        gyroX: parseFloat(values[7]),
+        gyroY: parseFloat(values[8]),
+        gyroZ: parseFloat(values[9]),
+        magX: parseFloat(values[10]),
+        magY: parseFloat(values[11]),
+        magZ: parseFloat(values[12]),
+        rssi: parseFloat(values[13]),
+    };
+
+    return parsedData;
+}
+
+// Function to generate the string to display in the dropdown
 function generatePortOutputString(port: SerialPortInfo): string {
     let output = port.port_name;
 
@@ -66,7 +102,7 @@ function DevicesWidget(props: MyComponentProps) {
         }
 
         // Create a new serialport instance
-        const newSerialport = new Serialport({ path: port, baudRate: baud, flowControl: "Software"});
+        const newSerialport = new Serialport({ path: port, baudRate: baud, flowControl: "Software" });
         // Set the serialport state
         props.handleNewSerialPort(newSerialport);
         console.log("Opening serial port", newSerialport);
@@ -98,59 +134,61 @@ function DevicesWidget(props: MyComponentProps) {
 
     function getStatusFromData(latestData: string): RocketState {
         if (latestData.includes("ARMD")) {
-          return RocketState.ARMED;
+            return RocketState.ARMED;
         } else if (latestData.includes("RECY")) {
-          return RocketState.RECOVERY;
+            return RocketState.RECOVERY;
         } else if (latestData.includes("IDLE") || latestData.includes("SA")) {
-          return RocketState.IDLE;
+            return RocketState.IDLE;
         } else if (latestData.includes("/*")) {
-          return RocketState.LAUNCHED;
+            return RocketState.LAUNCHED;
         } else {
-          return RocketState.UNKNOWN; // Default to unknown if the data doesn't match any state
+            return RocketState.UNKNOWN; // Default to unknown if the data doesn't match any state
         }
-      }
+    }
 
-      function listenToSerialPort(serialport: Serialport) {
+    function listenToSerialPort(serialport: Serialport) {
         if (serialport === undefined) {
-          console.error("Serial port is not open");
-          return;
+            console.error("Serial port is not open");
+            return;
         }
-      
+
         console.log("Listening to serial port", serialport);
-      
+
         let buffer = "";
-      
+
         serialport.listen((data: Uint8Array) => {
-          // Use TextDecoder to convert the Uint8Array to a string
-          const decoder = new TextDecoder();
-          const decodedString = decoder.decode(data);
-          console.log("Incoming data", decodedString);
-      
-          // Append the incoming data to the buffer
-          buffer += decodedString;
-      
-          // Split the buffer into an array of strings using the '\n' delimiter
-          const lines = buffer.split('\n');
-      
-          // Iterate over the array and call handleSerialData and handleRocketStateChange with each line of data
-          for (let i = 0; i < lines.length - 1; i++) {
-            const line = lines[i];
-            const encoder = new TextEncoder();
-            const lineData = encoder.encode(line);
-            props.handleSerialData(lineData);
-            props.handleRocketStateChange(getStatusFromData(line));
-          }
-      
-          // Keep the last line in the buffer in case it is incomplete
-          buffer = lines[lines.length - 1];
+            // Use TextDecoder to convert the Uint8Array to a string
+            const decoder = new TextDecoder();
+            const decodedString = decoder.decode(data);
+            console.log("Incoming data", decodedString);
+
+            // Append the incoming data to the buffer
+            buffer += decodedString;
+
+            // Split the buffer into an array of strings using the '\n' delimiter
+            const lines = buffer.split('\n');
+
+            // Iterate over the array and call handleSerialData and handleRocketStateChange with each line of data
+            for (let i = 0; i < lines.length - 1; i++) {
+                const line = lines[i];
+                props.handleSerialData(line);
+                let status = getStatusFromData(line);
+                props.handleRocketStateChange(status);
+                if (status === RocketState.LAUNCHED) {
+                    props.appendSensorDataToTimeSeries(parseSensorData(line));
+                }
+            }
+
+            // Keep the last line in the buffer in case it is incomplete
+            buffer = lines[lines.length - 1];
         }, false)
-        .then((res) => {
-          console.log('Listening to serial port', res);
-        })
-        .catch((err) => {
-          console.error(err);
-        });
-      }      
+            .then((res) => {
+                console.log('Listening to serial port', res);
+            })
+            .catch((err) => {
+                console.error(err);
+            });
+    }
 
     function readFromSerialPort(serialport: Serialport) {
         if (serialport === undefined) {

@@ -5,7 +5,7 @@ import { Serialport } from 'tauri-serialport'
 interface MyComponentProps {
     className?: string;
     serialPortStatus: boolean;
-    serialData: Uint8Array[];
+    serialData: string[];
     serialPort: Serialport | undefined;
 }
 
@@ -13,18 +13,13 @@ function DeviceTerminal(props: MyComponentProps) {
     const terminalRef = useRef<HTMLDivElement>(null);
     const [serialCommand, setSerialCommand] = useState('');
 
-    const convertUint8ArrayToString = (data: Uint8Array) => {
-        const decoder = new TextDecoder();
-        return decoder.decode(data);
-    };
-
     function readFromSerialPort() {
         if (props.serialPort === undefined) {
             console.error("Serial port is not open");
             return;
         }
         console.log("Reading from serial port", props.serialPort);
-        props.serialPort.read({ timeout: 1 * 1000 })
+        props.serialPort.read({ timeout: 250 })
             .then((data) => {
                 console.log('Read data: ', data);
             })
@@ -82,7 +77,7 @@ function DeviceTerminal(props: MyComponentProps) {
                         <Flex justifyContent="start" key={"tline" + index}>
                             <Text color="gray" className="font-mono tabular-nums min-w-20">{"> " + (index + 1) + " "}</Text>
                             <Col numColSpan={11}>
-                                <Text>{convertUint8ArrayToString(line)}</Text>
+                                <Text>{line}</Text>
                             </Col>
                         </Flex>
                     ))}

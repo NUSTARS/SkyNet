@@ -41,7 +41,7 @@ function DeviceStateWidget(props: MyComponentProps) {
             return;
         }
         console.log("Reading from serial port", props.serialPort);
-        props.serialPort.read({ timeout: 1 * 1000 })
+        props.serialPort.read({ timeout: 250 })
             .then((data) => {
                 console.log('Read data: ', data);
             })

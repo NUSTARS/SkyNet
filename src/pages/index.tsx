@@ -9,49 +9,69 @@ import DeviceTerminal from '@/widgets/deviceterminal';
 import DeviceStateWidget from '@/widgets/devicestate';
 import { Serialport } from 'tauri-serialport';
 import { RocketState } from '@/utils/types/rocketState';
-
-const data = [
-  {
-    Packet: 1,
-    x: 2890,
-    y: 2400,
-    z: 2385
-  },
-  {
-    Packet: 2,
-    x: 1890,
-    y: 1398,
-    z: 2410
-  },
-  {
-    Packet: 3,
-    x: 3890,
-    y: 2980,
-    z: 2081
-  }
-];
+import { SensorData, TimeSeriesData } from '@/utils/types/sensorData';
+import AltitudeWidget from '@/widgets/altitude';
+import DrogueStatusWidget from '@/widgets/droguestatus';
+import DeviceTemperatureWidget from '@/widgets/devicetemperature';
 
 export default function Home() {
   const [serialPortStatus, setIsSerialPortOpen] = useState(false);
-  const [serialData, setSerialData] = useState<Uint8Array[]>([]);
+  const [serialData, setSerialData] = useState<string[]>([]);
   const [serialPort, setSerialport] = useState<Serialport | undefined>(undefined);
   const [rocketState, setRocketState] = useState<RocketState>(0);
-
-  const handleNewSerialPort = (port: Serialport) => {
+  const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData>({
+    ToF: [],
+    temperature: [],
+    pressure: [],
+    altitude: [],
+    accelX: [],
+    accelY: [],
+    accelZ: [],
+    gyroX: [],
+    gyroY: [],
+    gyroZ: [],
+    magX: [],
+    magY: [],
+    magZ: [],
+    rssi: [],
+  });
+  const handleNewSerialPort = (port: Serialport): void => {
     setSerialport(port);
   }
 
-  const handleSerialData = (data: Uint8Array) => {
+  const handleSerialData = (data: string): void => {
     setSerialData((prevData) => [...prevData, data]);
   };
 
-  const handlePortStatusChange = (portStatus: boolean) => {
+  const handlePortStatusChange = (portStatus: boolean): void => {
     setIsSerialPortOpen(portStatus);
   }
 
-  const handleRocketStateChange = (state: RocketState) => {
+  const handleRocketStateChange = (state: RocketState): void => {
     setRocketState(state);
   }
+
+  const appendSensorDataToTimeSeries = (parsedData: SensorData): void => {
+    if (parsedData) {
+      setTimeSeriesData((prevState) => ({
+        ToF: [...prevState.ToF, parsedData.ToF],
+        temperature: [...prevState.temperature, parsedData.temperature],
+        pressure: [...prevState.pressure, parsedData.pressure],
+        altitude: [...prevState.altitude, parsedData.altitude],
+        accelX: [...prevState.accelX, parsedData.accelX],
+        accelY: [...prevState.accelY, parsedData.accelY],
+        accelZ: [...prevState.accelZ, parsedData.accelZ],
+        gyroX: [...prevState.gyroX, parsedData.gyroX],
+        gyroY: [...prevState.gyroY, parsedData.gyroY],
+        gyroZ: [...prevState.gyroZ, parsedData.gyroZ],
+        magX: [...prevState.magX, parsedData.magX],
+        magY: [...prevState.magY, parsedData.magY],
+        magZ: [...prevState.magZ, parsedData.magZ],
+        rssi: [...prevState.rssi, parsedData.rssi],
+      }));
+    }
+  }
+
 
   return (
     <>
@@ -64,34 +84,32 @@ export default function Home() {
       <main className="p-4 md:p-10 mx-auto max-w-7xl">
         <Grid numCols={1} numColsSm={2} numColsLg={3} className="gap-2">
           <TimeWidget />
-          <Card>
-            <Text>Rocket Altitude</Text>
-            <Metric>71,465 ft</Metric>
-            <Flex className="mt-4">
-              <Text>32% of the target apogee</Text>
-              <Text>225,000 ft</Text>
-            </Flex>
-            <ProgressBar percentageValue={32} className="mt-2" />
-          </Card>
-          <DeviceStateWidget serialPortStatus={serialPortStatus} rocketState={rocketState} serialPort={serialPort}/>
+          <AltitudeWidget
+            targetApogee={1000}
+            rocketState={rocketState}
+            sensorData={timeSeriesData}
+          />
+          <DeviceStateWidget serialPortStatus={serialPortStatus} rocketState={rocketState} serialPort={serialPort} />
           <Col numColSpan={1} numColSpanLg={2} className="gap-2">
             <IMUChartWidget
               className="mt-4"
               title="Accelerometer"
               text="LSM6DSL"
-              chartData={data}
-              chartIndex={"Packet"}
+              dataType='accel'
+              sensorData={timeSeriesData}
             />
           </Col>
           <Grid numCols={1}>
-            <Card className="mt-4">
-              <Text>Drogue Status</Text>
-              <Metric>Not Deployed</Metric>
-            </Card>
-            <Card className="mt-4">
-              <Text>SkyNet Transmitter Temperature</Text>
-              <Metric>NaN</Metric>
-            </Card>
+            <DrogueStatusWidget
+              className="mt-4"
+              drogueThreshold={100}
+              sensorData={timeSeriesData}
+              rocketState={rocketState}
+            />
+            <DeviceTemperatureWidget
+              className="mt-4"
+              sensorData={timeSeriesData}
+            />
           </Grid>
           <Col numColSpan={3}>
             <Flex className="gap-2">
@@ -99,24 +117,37 @@ export default function Home() {
                 className="mt-4"
                 title="Gyroscope"
                 text="LSM6DSL"
-                chartData={data}
-                chartIndex={"Packet"}
+                dataType='gyro'
+                sensorData={timeSeriesData}
               />
               <IMUChartWidget
                 className="mt-4"
                 title="Magnetometer"
                 text="LSM6DSL"
-                chartData={data}
-                chartIndex={"Packet"}
+                dataType='mag'
+                sensorData={timeSeriesData}
               />
             </Flex>
           </Col>
         </Grid>
         <Grid numCols={1} numColsSm={2} numColsLg={3} className="gap-2">
           <Col numColSpan={1} numColSpanLg={2}>
-            <DeviceTerminal className="mt-4 min-h-full" serialPortStatus={serialPortStatus} serialData={serialData} serialPort={serialPort}/>
+            <DeviceTerminal
+              className="mt-4 min-h-full"
+              serialPortStatus={serialPortStatus}
+              serialData={serialData}
+              serialPort={serialPort} />
           </Col>
-          <DynamicDevicesWidget className="mt-4 min-h-full" serialPortStatus={serialPortStatus} handlePortStatusChange={handlePortStatusChange} handleSerialData={handleSerialData} serialPort={serialPort} handleNewSerialPort={handleNewSerialPort} handleRocketStateChange={handleRocketStateChange} />
+          <DynamicDevicesWidget
+            className="mt-4 min-h-full"
+            serialPortStatus={serialPortStatus}
+            handlePortStatusChange={handlePortStatusChange}
+            handleSerialData={handleSerialData}
+            serialPort={serialPort}
+            handleNewSerialPort={handleNewSerialPort}
+            handleRocketStateChange={handleRocketStateChange}
+            appendSensorDataToTimeSeries={appendSensorDataToTimeSeries}
+          />
         </Grid>
       </main>
     </>
