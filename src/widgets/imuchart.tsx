@@ -21,7 +21,6 @@ function formatChartData(dataX: number[], dataY: number[], dataZ: number[]): Arr
   return formattedData;
 }
 
-
 function IMUChart(props: MyComponentProps) {
   // Extract the appropriate data from the sensorData prop based on the dataType prop
   let dataX, dataY, dataZ;
@@ -43,6 +42,21 @@ function IMUChart(props: MyComponentProps) {
       break;
   }
 
+  const dataFormatter = (number: number) => {
+    // for accel, the number is in m/s^2
+    if (props.dataType === 'accel') {
+      return `${number.toFixed(2)} °/s^2`;
+    }
+    // for gyro, the number is in degree/s
+    if (props.dataType === 'gyro') {
+      return `${number.toFixed(2)} °/s`;
+    }
+    // for mag, the number is in uT
+    if (props.dataType === 'mag') {
+      return `${number.toFixed(2)} uT`;
+    }
+  }
+
   // Format the data for the LineChart component
   const chartData = formatChartData(dataX, dataY, dataZ);
 
@@ -53,9 +67,10 @@ function IMUChart(props: MyComponentProps) {
       <LineChart
         className="mt-4 h-80"
         data={chartData}
-      categories={['x', 'y', 'z']}
-      index={"Index"}
-      colors={['indigo', 'fuchsia', 'emerald']}
+        categories={['x', 'y', 'z']}
+        index={"Index"}
+        colors={['indigo', 'fuchsia', 'emerald']}
+        valueFormatter={dataFormatter}
       />
     </Card>
   );
