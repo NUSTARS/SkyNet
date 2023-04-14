@@ -1,5 +1,7 @@
-# SkyNet Telemetry System
 [![CodeFactor](https://www.codefactor.io/repository/github/nustars/skynet/badge/main)](https://www.codefactor.io/repository/github/nustars/skynet/overview/main)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/NUSTARS/SkyNet/blob/main/LICENSE)
+
+# SkyNet Telemetry System
 SkyNet is a rocket telemetry system designed by NUSTARS.
 
 ## Getting Started
