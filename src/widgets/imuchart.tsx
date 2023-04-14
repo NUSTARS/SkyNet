@@ -55,6 +55,7 @@ function IMUChart(props: MyComponentProps) {
     if (props.dataType === 'mag') {
       return `${number.toFixed(2)} uT`;
     }
+    return `${number}`;
   }
 
   // Format the data for the LineChart component

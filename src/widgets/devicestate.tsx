@@ -1,7 +1,7 @@
-import { Button, Card, Metric, Text } from "@tremor/react";
+import { Button, Card, Flex, Metric, Text, TextInput } from "@tremor/react";
 import { RocketState } from "@/utils/types/rocketState";
 import RocketLaunchIcon from "@heroicons/react/24/outline/RocketLaunchIcon"
-import { confirm } from "@tauri-apps/api/dialog";
+import { confirm, message } from "@tauri-apps/api/dialog";
 import { Serialport } from "tauri-serialport";
 import { useEffect, useState } from "react";
 interface MyComponentProps {
@@ -14,6 +14,7 @@ interface MyComponentProps {
 function DeviceStateWidget(props: MyComponentProps) {
 
     const [isArming, setIsArming] = useState(false);
+    const [seaLevelPressure, setSeaLevelPressure] = useState(0);
 
     function getStateText(state: RocketState) {
         if (!props.serialPortStatus) {
@@ -67,12 +68,31 @@ function DeviceStateWidget(props: MyComponentProps) {
     };
 
     const armRocket = async () => {
+        // Check if sea level pressure is set and valid
+        // It must be between 850 and 1100 HPa in integer form
+        let seaLevelPressureString: string;
+        if (seaLevelPressure === 0) {
+            console.error("Sea level pressure is not set");
+            message("Sea level pressure is not set", { title: 'SkyNet', type: 'error' });
+            return;
+        } else if (seaLevelPressure < 900 || seaLevelPressure > 1100) {
+            console.error("Sea level pressure is not valid");
+            message("Sea level pressure is not valid", { title: 'SkyNet', type: 'error' });
+            return;
+        } else if (Number.isInteger(seaLevelPressure) === false) {
+            console.error("Sea level pressure is not an integer");
+            message("Sea level pressure is not an integer", { title: 'SkyNet', type: 'error' });
+            return;
+        } else {
+            seaLevelPressureString = seaLevelPressure.toString().padStart(4, '0');
+        }
         const confirmed = await confirm('This will arm the SkyNet transmitter for launch. Are you sure?', { title: 'SkyNet', type: 'warning' });
         if (confirmed) {
             console.log("Arming rocket");
+            console.log("SA" + seaLevelPressureString);
             setIsArming(true);
             // Write to serial port "SA" for STATE_ARMED
-            writeToSerialPort("SA");
+            writeToSerialPort("SA" + seaLevelPressureString);
         } else {
             console.log("Cancelled arming rocket");
         }
@@ -89,9 +109,16 @@ function DeviceStateWidget(props: MyComponentProps) {
             <Text>Device State</Text>
             <Metric>{getStateText(props.rocketState)}</Metric>
             {props.serialPortStatus && props.rocketState === RocketState.IDLE && (
-              <Button icon={RocketLaunchIcon} color="red" className="mt-4" onClick={armRocket} loadingText="Arming..." loading={isArming}>
-                  ARM
-              </Button>
+                <Flex className="space-x-2 mt-4">
+                    <TextInput placeholder="Sea Level Pressure (HPa)" onChange={(e) => setSeaLevelPressure(Number(e.target.value))} />
+                    <Button icon={RocketLaunchIcon}
+                        color="red"
+                        onClick={armRocket}
+                        loadingText="Arming..."
+                        loading={isArming}>
+                        ARM
+                    </Button>
+                </Flex>
             )}
         </Card>
     );
