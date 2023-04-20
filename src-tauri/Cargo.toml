@@ -5,7 +5,7 @@ description = "SkyNet Telemetry System"
 authors = ["you"]
 license = "MIT"
 repository = ""
-default-run = "app"
+default-run = "skynet"
 edition = "2021"
 rust-version = "1.59"
 
