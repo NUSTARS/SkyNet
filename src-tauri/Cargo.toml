@@ -1,9 +1,9 @@
 [package]
-name = "app"
-version = "0.1.0"
+name = "skynet"
+version = "0.1.1"
 description = "SkyNet Telemetry System"
 authors = ["you"]
-license = ""
+license = "MIT"
 repository = ""
 default-run = "app"
 edition = "2021"
