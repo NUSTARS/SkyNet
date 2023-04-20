@@ -1,5 +1,5 @@
 import Head from 'next/head'
-import { Card, Metric, Text, Flex, Grid, Title, BarList, ProgressBar, Col } from '@tremor/react';
+import { Flex, Grid, Col, Card, Title, Text, LineChart } from '@tremor/react';
 import TimeWidget from '@/widgets/time';
 import IMUChartWidget from '@/widgets/imuchart';
 import dynamic from 'next/dynamic';
@@ -14,6 +14,7 @@ import AltitudeWidget from '@/widgets/altitude';
 import DrogueStatusWidget from '@/widgets/droguestatus';
 import DeviceTemperatureWidget from '@/widgets/devicetemperature';
 import SaveDataWidget from '@/widgets/savedata';
+import AltitudeChartWidget from '@/widgets/altitudechart';
 
 export default function Home() {
   const [serialPortStatus, setIsSerialPortOpen] = useState(false);
@@ -25,17 +26,15 @@ export default function Home() {
     temperature: [],
     pressure: [],
     altitude: [],
-    accelX: [],
-    accelY: [],
-    accelZ: [],
-    gyroX: [],
-    gyroY: [],
-    gyroZ: [],
-    magX: [],
-    magY: [],
-    magZ: [],
+    accel: [],
+    gyro: [],
+    mag: [],
     rssi: [],
   });
+  const [localConfig, setLocalConfig] = useState({
+    targetApogee: 1000
+  });
+
   const handleNewSerialPort = (port: Serialport): void => {
     setSerialport(port);
   }
@@ -52,22 +51,43 @@ export default function Home() {
     setRocketState(state);
   }
 
+  const handleLocalConfigChange = (key: string, value: any): void => {
+    setLocalConfig((prevState) => ({
+      ...prevState,
+      [key]: value
+    }));
+  }
+
+  function formatIMUChartData(index: number, dataX: number, dataY: number, dataZ: number): { Index: number; x: number; y: number; z: number } {
+    return {
+      Index: index,
+      x: dataX,
+      y: dataY,
+      z: dataZ,
+    };
+  }
+
+  function formatAltitudeChartData(index: number, data: number): { Index: number; altitude: number } {
+    return {
+      Index: index,
+      altitude: data,
+    };
+  }
+
   const appendSensorDataToTimeSeries = (parsedData: SensorData): void => {
     if (parsedData) {
+      let accel = formatIMUChartData(parsedData.index, parsedData.accelX, parsedData.accelY, parsedData.accelZ);
+      let gyro = formatIMUChartData(parsedData.index, parsedData.gyroX, parsedData.gyroY, parsedData.gyroZ);
+      let mag = formatIMUChartData(parsedData.index, parsedData.magX, parsedData.magY, parsedData.magZ);
+      let altitude = formatAltitudeChartData(parsedData.index, parsedData.altitude);
       setTimeSeriesData((prevState) => ({
         ToF: [...prevState.ToF, parsedData.ToF],
         temperature: [...prevState.temperature, parsedData.temperature],
         pressure: [...prevState.pressure, parsedData.pressure],
-        altitude: [...prevState.altitude, parsedData.altitude],
-        accelX: [...prevState.accelX, parsedData.accelX],
-        accelY: [...prevState.accelY, parsedData.accelY],
-        accelZ: [...prevState.accelZ, parsedData.accelZ],
-        gyroX: [...prevState.gyroX, parsedData.gyroX],
-        gyroY: [...prevState.gyroY, parsedData.gyroY],
-        gyroZ: [...prevState.gyroZ, parsedData.gyroZ],
-        magX: [...prevState.magX, parsedData.magX],
-        magY: [...prevState.magY, parsedData.magY],
-        magZ: [...prevState.magZ, parsedData.magZ],
+        altitude: [...prevState.altitude, altitude],
+        accel: [...prevState.accel, accel],
+        gyro: [...prevState.gyro, gyro],
+        mag: [...prevState.mag, mag],
         rssi: [...prevState.rssi, parsedData.rssi],
       }));
     }
@@ -86,7 +106,7 @@ export default function Home() {
         <Grid numCols={1} numColsSm={2} numColsLg={3} className="gap-2">
           <TimeWidget />
           <AltitudeWidget
-            targetApogee={1000}
+            targetApogee={localConfig.targetApogee}
             rocketState={rocketState}
             sensorData={timeSeriesData}
           />
@@ -97,7 +117,7 @@ export default function Home() {
               title="Accelerometer"
               text="LSM6DSL"
               dataType='accel'
-              sensorData={timeSeriesData}
+              sensorData={timeSeriesData.accel}
             />
           </Col>
           <Grid numCols={1}>
@@ -123,18 +143,26 @@ export default function Home() {
                 title="Gyroscope"
                 text="LSM6DSL"
                 dataType='gyro'
-                sensorData={timeSeriesData}
+                sensorData={timeSeriesData.gyro}
               />
               <IMUChartWidget
                 className="mt-4"
                 title="Magnetometer"
                 text="LSM6DSL"
                 dataType='mag'
-                sensorData={timeSeriesData}
+                sensorData={timeSeriesData.mag}
               />
             </Flex>
           </Col>
         </Grid>
+        <AltitudeChartWidget
+          className="mt-4"
+          title="Altitude"
+          text="BMP388"
+          sensorData={timeSeriesData.altitude}
+          localConfig={localConfig}
+          handleLocalConfigChange={handleLocalConfigChange}
+        />
         <Grid numCols={1} numColsSm={2} numColsLg={3} className="gap-2">
           <Col numColSpan={1} numColSpanLg={2}>
             <DeviceTerminal

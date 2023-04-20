@@ -12,7 +12,7 @@ interface AltitudeWidgetProps {
 const AltitudeWidget: React.FC<AltitudeWidgetProps> = ({ className, targetApogee, rocketState, sensorData }) => {
     // Get the latest altitude value
     const currentAltitude = sensorData.altitude[sensorData.altitude.length - 1] || 0;
-    const percentageValue = Math.min(Math.round((currentAltitude / targetApogee) * 100), 100);
+    const percentageValue = Math.min(Math.round((currentAltitude.altitude / targetApogee) * 100), 100);
 
     // Display a message when the rocket state is not LAUNCHED
     if (rocketState !== RocketState.LAUNCHED) {
@@ -30,7 +30,7 @@ const AltitudeWidget: React.FC<AltitudeWidgetProps> = ({ className, targetApogee
     return (
         <Card className={className}>
             <Text>Rocket Altitude</Text>
-            <Metric>{currentAltitude.toFixed(0)} ft</Metric>
+            <Metric>{currentAltitude.altitude.toFixed(0)} ft</Metric>
             <Flex className="mt-4">
                 <Text>{percentageValue}% of the target apogee</Text>
                 <Text>{targetApogee.toLocaleString()} ft</Text>

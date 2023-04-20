@@ -9,6 +9,7 @@ import { SensorData } from "@/utils/types/sensorData";
    For more information, see: 
    https://nextjs.org/docs/advanced-features/dynamic-import */
 
+let sensorDataIndex: number = 0;
 interface MyComponentProps {
     className?: string;
     handleSerialData: (data: string) => void;
@@ -34,6 +35,7 @@ function parseSensorData(input: string): SensorData {
 
     // Parse the values and create a SensorData object
     const parsedData: SensorData = {
+        index: sensorDataIndex++, // Increment the index
         ToF: parseFloat(values[0]),
         temperature: parseFloat(values[1]),
         pressure: parseFloat(values[2]),
